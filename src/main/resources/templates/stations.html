@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Find Charging Stations')}"></head>
+<body>
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container">
+            <!-- Breadcrumb & Header -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-geo-alt-fill text-success me-2"></i>Find EV Charging Stations</h3>
+                    <p class="text-muted small mb-0">Search verified charging hubs, check live charger connectors, and reserve time slots.</p>
+                </div>
+                <div class="mt-2 mt-md-0">
+                    <button type="button" id="btnLocateMe" class="btn btn-electric-outline btn-sm">
+                        <i class="bi bi-crosshair me-1"></i> Near Me (GPS)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search and Filter Form -->
+            <div class="card card-modern p-3 mb-4 shadow-sm">
+                <form id="stationSearchForm" th:action="@{/stations}" method="get" class="row g-2">
+                    <input type="hidden" id="userLat" name="userLat" th:value="${criteria.userLat}" />
+                    <input type="hidden" id="userLng" name="userLng" th:value="${criteria.userLng}" />
+
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">City</label>
+                        <select class="form-select form-select-sm" name="city">
+                            <option value="">All Cities</option>
+                            <option th:each="c : ${cities}" th:value="${c}" th:text="${c}" th:selected="${criteria.city == c}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Area / Locality</label>
+                        <input type="text" class="form-control form-control-sm" name="area" th:value="${criteria.area}" placeholder="e.g. Caltex, Cyberpark">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted mb-1">Charger Type</label>
+                        <select class="form-select form-select-sm" name="chargerType">
+                            <option value="">All Types</option>
+                            <option value="DC Fast Charging" th:selected="${criteria.chargerType == 'DC Fast Charging'}">DC Fast Charging</option>
+                            <option value="AC Fast Charging" th:selected="${criteria.chargerType == 'AC Fast Charging'}">AC Fast Charging</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted mb-1">Connector</label>
+                        <select class="form-select form-select-sm" name="connectorType">
+                            <option value="">All Connectors</option>
+                            <option value="CCS2" th:selected="${criteria.connectorType == 'CCS2'}">CCS2</option>
+                            <option value="Type 2" th:selected="${criteria.connectorType == 'Type 2'}">Type 2</option>
+                            <option value="CHAdeMO" th:selected="${criteria.connectorType == 'CHAdeMO'}">CHAdeMO</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end gap-1">
+                        <button type="submit" class="btn btn-electric btn-sm w-100">
+                            <i class="bi bi-filter"></i> Apply
+                        </button>
+                        <a th:href="@{/stations}" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Interactive Map Container -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-bold text-muted"><i class="bi bi-map me-1"></i> Interactive Station Map (OpenStreetMap &amp; Leaflet)</span>
+                    <span class="badge bg-light text-dark border"><span th:text="${totalFound}">0</span> Stations Found</span>
+                </div>
+                <!-- Leaflet container passes JSON data via data-stations attribute -->
+                <div id="stationMap" 
+                     th:attr="data-stations=${@stationJsonHelper.toJson(stations)}">
+                </div>
+            </div>
+
+            <!-- Stations Listing Grid -->
+            <div th:if="${#lists.isEmpty(stations)}" class="alert alert-warning text-center py-4">
+                <i class="bi bi-search fs-3 d-block mb-2"></i>
+                No charging stations matched your filter criteria. Try expanding your search or selecting "All Cities".
+            </div>
+
+            <div th:unless="${#lists.isEmpty(stations)}" class="row g-4">
+                <div th:each="st : ${stations}" class="col-lg-4 col-md-6">
+                    <div class="card card-modern card-interactive station-card p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span th:if="${st.demo}" class="station-badge-demo me-1">DEMO DATA</span>
+                                <span th:unless="${st.demo}" class="station-badge-active me-1">VERIFIED</span>
+                                <span class="badge bg-success bg-opacity-10 text-success fw-semibold" th:text="${st.status}">ACTIVE</span>
+                            </div>
+                            <span th:if="${st.distanceKm != null}" class="badge bg-primary">
+                                <i class="bi bi-geo"></i> <span th:text="${st.distanceKm} + ' km'">2.4 km</span>
+                            </span>
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-1" th:text="${st.name}">Station Name</h5>
+                        <p class="small text-muted mb-2">
+                            <i class="bi bi-geo-alt text-danger me-1"></i>
+                            <span th:text="${st.address + ', ' + st.city}">Address</span>
+                        </p>
+
+                        <!-- Operating Hours & Contact -->
+                        <div class="small text-muted mb-3 d-flex justify-content-between">
+                            <span><i class="bi bi-clock me-1"></i> <span th:text="${st.operatingDays}">All Days</span></span>
+                            <span><i class="bi bi-telephone me-1"></i> <span th:text="${st.contactNumber}">Phone</span></span>
+                        </div>
+
+                        <!-- Amenities -->
+                        <div class="mb-3" th:if="${!#lists.isEmpty(st.amenities)}">
+                            <div class="d-flex flex-wrap gap-1">
+                                <span th:each="am : ${st.amenities}" class="badge bg-light text-secondary border small" style="font-size: 0.68rem;" th:text="${am}">WiFi</span>
+                            </div>
+                        </div>
+
+                        <!-- Charger badges -->
+                        <div class="mb-3">
+                            <div class="small fw-semibold text-muted mb-1">Installed Charging Guns:</div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span th:each="c : ${st.chargers}" class="badge bg-light text-primary border" style="font-size: 0.72rem;">
+                                    <i class="bi bi-lightning-charge text-warning"></i>
+                                    <span th:text="${c.chargerIdentifier + ' (' + c.powerKw + 'kW ' + c.connectorType + ')'}">GUN-01</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-muted small d-block">Rate</span>
+                                <strong class="text-success fs-5">
+                                    ₹<span th:text="${!#lists.isEmpty(st.chargers) ? st.chargers[0].pricePerKwh : '18.00'}">18.00</span>
+                                </strong>
+                                <span class="small text-muted">/kWh</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a th:href="@{'/stations/' + ${st.id}}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-info-circle me-1"></i> Details
+                                </a>
+                                <a th:href="@{'/booking/new?stationId=' + ${st.id}}" class="btn btn-sm btn-electric">
+                                    <i class="bi bi-calendar-plus me-1"></i> Book Slot
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

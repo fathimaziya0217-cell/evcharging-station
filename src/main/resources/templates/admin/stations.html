@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Manage Stations')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container-fluid px-lg-5">
+            <div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-ev-station text-success me-2"></i>Charging Stations Management</h3>
+                    <p class="text-muted small mb-0">Add, edit, inspect, and toggle operational status for physical stations.</p>
+                </div>
+                <a th:href="@{/admin/stations/new}" class="btn btn-electric btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Add New Station
+                </a>
+            </div>
+
+            <div class="card card-modern p-4 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-0 mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>ID</th>
+                                <th>Station Name</th>
+                                <th>City / Area</th>
+                                <th>Coordinates</th>
+                                <th>Guns</th>
+                                <th>Status</th>
+                                <th>Type</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="s : ${stations}">
+                                <td class="fw-bold font-monospace" th:text="${s.id}">1</td>
+                                <td>
+                                    <strong class="text-dark d-block" th:text="${s.name}">Station</strong>
+                                    <span class="small text-muted" th:text="${s.address}">Address</span>
+                                </td>
+                                <td>
+                                    <strong th:text="${s.city}">Kannur</strong>
+                                    <span class="small text-muted d-block" th:text="${s.area}">Caltex</span>
+                                </td>
+                                <td class="small font-monospace" th:text="${s.latitude + ', ' + s.longitude}">0, 0</td>
+                                <td>
+                                    <a th:href="@{'/admin/chargers?stationId=' + ${s.id}}" class="badge bg-primary text-decoration-none">
+                                        <span th:text="${#lists.size(s.chargers)}">2</span> Guns
+                                    </a>
+                                </td>
+                                <td>
+                                    <span th:if="${s.status == 'ACTIVE'}" class="badge bg-success">ACTIVE</span>
+                                    <span th:if="${s.status == 'INACTIVE'}" class="badge bg-secondary">INACTIVE</span>
+                                    <span th:if="${s.status == 'UNDER_MAINTENANCE'}" class="badge bg-warning text-dark">MAINTENANCE</span>
+                                </td>
+                                <td>
+                                    <span th:if="${s.demo}" class="badge bg-warning text-dark border">DEMO</span>
+                                    <span th:unless="${s.demo}" class="badge bg-success">LIVE</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a th:href="@{'/admin/stations/edit/' + ${s.id}}" class="btn btn-sm btn-outline-dark" title="Edit Station">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form th:action="@{'/admin/stations/toggle/' + ${s.id}}" method="post">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                            <input type="hidden" name="status" th:value="${s.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}" />
+                                            <button type="submit" th:class="${s.status == 'ACTIVE' ? 'btn btn-sm btn-outline-danger' : 'btn btn-sm btn-outline-success'}" 
+                                                    th:title="${s.status == 'ACTIVE' ? 'Deactivate' : 'Activate'}">
+                                                <i th:class="${s.status == 'ACTIVE' ? 'bi bi-pause-circle' : 'bi bi-play-circle'}"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

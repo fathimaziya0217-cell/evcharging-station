@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Booking Details - ' + ${booking.bookingReference})}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <!-- Actions top bar -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+                        <a th:href="@{/user/my-bookings}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Back to My Bookings
+                        </a>
+                        <button type="button" onclick="window.print()" class="btn btn-navy btn-sm">
+                            <i class="bi bi-printer me-1"></i> Print Confirmation
+                        </button>
+                    </div>
+
+                    <div class="card card-modern shadow-lg p-4 p-md-5 printable-receipt border-0">
+                        <div class="d-flex justify-content-between align-items-start pb-3 mb-4 border-bottom">
+                            <div>
+                                <span class="badge bg-light text-dark font-monospace border mb-1" th:text="${booking.bookingReference}">EVC-REF</span>
+                                <h3 class="fw-bold text-dark mb-0">Booking Confirmation</h3>
+                            </div>
+                            <div class="text-end">
+                                <span th:if="${booking.bookingStatus == 'CONFIRMED'}" class="badge bg-success fs-6">Confirmed</span>
+                                <span th:if="${booking.bookingStatus == 'PENDING_PAYMENT'}" class="badge bg-warning text-dark fs-6">Pending Payment</span>
+                                <span th:if="${booking.bookingStatus == 'COMPLETED'}" class="badge bg-primary fs-6">Completed</span>
+                                <span th:if="${booking.bookingStatus == 'CANCELLED'}" class="badge bg-danger fs-6">Cancelled</span>
+                                <span th:if="${booking.bookingStatus == 'EXPIRED'}" class="badge bg-secondary fs-6">Expired</span>
+                            </div>
+                        </div>
+
+                        <!-- Station & Slot Info -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Charging Station:</span>
+                                <h5 class="fw-bold text-dark mb-1" th:text="${booking.stationName}">Station Name</h5>
+                                <p class="small text-muted mb-0" th:text="${booking.stationAddress + ', ' + booking.stationCity}">Address</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Reserved Charger:</span>
+                                <h5 class="fw-bold text-dark mb-1" th:text="${booking.chargerIdentifier}">GUN-01</h5>
+                                <p class="small text-muted mb-0" th:text="${booking.chargerPower + ' kW (' + booking.connectorType + ' - ' + booking.chargerType + ')'}">60 kW CCS2</p>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Reserved Date:</span>
+                                <strong class="fs-6" th:text="${booking.bookingDate}">Date</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Time Slot Window:</span>
+                                <strong class="fs-6" th:text="${booking.startTime + ' - ' + booking.endTime + ' (' + booking.durationMinutes + ' mins)'}">10:00 - 11:00</strong>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Estimated Energy Usage:</span>
+                                <span class="text-dark fw-semibold" th:text="${booking.estimatedEnergyKwh} + ' kWh'">30.00 kWh</span>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Total Estimated Cost:</span>
+                                <h4 class="fw-bold text-success mb-0">₹<span th:text="${booking.estimatedAmount}">555.00</span></h4>
+                            </div>
+                        </div>
+
+                        <!-- Customer Details -->
+                        <div class="p-3 bg-light rounded-3 mb-4 small">
+                            <div class="row g-2">
+                                <div class="col-sm-4">
+                                    <span class="text-muted d-block">Booked For:</span>
+                                    <strong th:text="${booking.userName}">User Name</strong>
+                                </div>
+                                <div class="col-sm-4">
+                                    <span class="text-muted d-block">Customer Email:</span>
+                                    <span th:text="${booking.userEmail}">email</span>
+                                </div>
+                                <div class="col-sm-4">
+                                    <span class="text-muted d-block">Payment Status:</span>
+                                    <span class="badge bg-secondary" th:text="${booking.paymentStatus}">PENDING</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cancellation info if cancelled -->
+                        <div th:if="${booking.bookingStatus == 'CANCELLED'}" class="alert alert-danger small mb-4">
+                            <strong>Cancelled on:</strong> <span th:text="${booking.cancelledAt}">Timestamp</span><br>
+                            <strong>Reason:</strong> <span th:text="${booking.cancellationReason}">Reason</span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2 justify-content-end no-print pt-3 border-top">
+                            <a th:if="${booking.bookingStatus == 'PENDING_PAYMENT'}" th:href="@{'/payment/' + ${booking.id}}" class="btn btn-electric px-4">
+                                <i class="bi bi-wallet2 me-1"></i> Proceed to Pay
+                            </a>
+                            <form th:if="${booking.bookingStatus == 'CONFIRMED' or booking.bookingStatus == 'PENDING_PAYMENT'}"
+                                  th:action="@{'/booking/' + ${booking.id} + '/cancel'}" method="post"
+                                  onsubmit="return confirm('Confirm cancellation of this charging slot?');">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button type="submit" class="btn btn-outline-danger">
+                                    Cancel Booking
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

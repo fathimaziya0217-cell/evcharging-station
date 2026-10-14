@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(${station.name})}"></head>
+<body>
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/stations}" class="text-decoration-none">Stations</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="${station.name}">Station Name</li>
+                </ol>
+            </nav>
+
+            <div class="row g-4">
+                <!-- Left Column: Station Info & Chargers -->
+                <div class="col-lg-7">
+                    <div class="card card-modern p-4 mb-4 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span th:if="${station.demo}" class="station-badge-demo me-2">DEMO DATA</span>
+                                <span th:unless="${station.demo}" class="station-badge-active me-2">VERIFIED REAL HUB</span>
+                                <span class="badge bg-success bg-opacity-10 text-success fw-bold" th:text="${station.status}">ACTIVE</span>
+                            </div>
+                            <a th:href="@{'/booking/new?stationId=' + ${station.id}}" class="btn btn-electric btn-sm px-3">
+                                <i class="bi bi-calendar-check me-1"></i> Book a Slot
+                            </a>
+                        </div>
+
+                        <h2 class="fw-bold text-dark mb-2" th:text="${station.name}">Station Name</h2>
+                        <p class="text-muted mb-3" th:text="${station.description}">Description</p>
+
+                        <div class="p-3 bg-light rounded-3 mb-4 small">
+                            <div class="row g-2">
+                                <div class="col-sm-6">
+                                    <strong class="d-block text-secondary">Address:</strong>
+                                    <span th:text="${station.address}">Address</span>, <span th:text="${station.city}">City</span>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong class="d-block text-secondary">Operating Hours:</strong>
+                                    <span th:text="${station.openingTime + ' - ' + station.closingTime + ' (' + station.operatingDays + ')'}">24/7</span>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong class="d-block text-secondary">Contact Line:</strong>
+                                    <span th:text="${station.contactNumber}">+91 98765 43210</span>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong class="d-block text-secondary">Parking &amp; Facility:</strong>
+                                    <span th:text="${station.parkingInformation != null ? station.parkingInformation : 'Standard EV Bays'}">Dedicated Bays</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Amenities Badges -->
+                        <div class="mb-4" th:if="${!#lists.isEmpty(station.amenities)}">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-cup-hot text-primary me-2"></i>Available Amenities</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span th:each="am : ${station.amenities}" class="badge bg-white text-dark border p-2 fw-medium shadow-sm">
+                                    <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                    <span th:text="${am}">Restroom</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Available Chargers Section -->
+                        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-plug-fill text-success me-2"></i>Installed Charging Guns</h5>
+
+                        <div th:if="${#lists.isEmpty(chargers)}" class="alert alert-info small">
+                            No chargers configured for this station yet.
+                        </div>
+
+                        <div th:unless="${#lists.isEmpty(chargers)}" class="table-responsive">
+                            <table class="table table-hover align-middle border rounded">
+                                <thead class="table-light small text-muted">
+                                    <tr>
+                                        <th>Charger</th>
+                                        <th>Connector &amp; Type</th>
+                                        <th>Power</th>
+                                        <th>Rate</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="c : ${chargers}">
+                                        <td class="fw-bold" th:text="${c.chargerIdentifier}">KNR-01</td>
+                                        <td>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border" th:text="${c.connectorType}">CCS2</span>
+                                            <span class="d-block small text-muted" th:text="${c.chargerType}">DC Fast</span>
+                                        </td>
+                                        <td>
+                                            <strong th:text="${c.powerKw} + ' kW'">60 kW</strong>
+                                        </td>
+                                        <td>
+                                            <span class="text-success fw-bold">₹<span th:text="${c.pricePerKwh}">18.50</span></span>
+                                            <span class="small text-muted">/kWh</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${c.operationalStatus == 'OPERATIONAL' and c.availabilityStatus == 'AVAILABLE'}" class="badge bg-success">Available</span>
+                                            <span th:if="${c.operationalStatus == 'OPERATIONAL' and c.availabilityStatus != 'AVAILABLE'}" class="badge bg-warning text-dark" th:text="${c.availabilityStatus}">Occupied</span>
+                                            <span th:if="${c.operationalStatus != 'OPERATIONAL'}" class="badge bg-danger" th:text="${c.operationalStatus}">Maintenance</span>
+                                        </td>
+                                        <td>
+                                            <a th:href="@{'/booking/new?stationId=' + ${station.id} + '&chargerId=' + ${c.id}}" class="btn btn-sm btn-electric">
+                                                Book
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Map & Quick Actions -->
+                <div class="col-lg-5">
+                    <div class="card card-modern p-3 mb-4 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-bold text-muted"><i class="bi bi-map-fill text-primary me-1"></i> Location Pinpoint</span>
+                            <a th:href="'https://www.google.com/maps/dir/?api=1&destination=' + ${station.latitude} + ',' + ${station.longitude}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-compass me-1"></i> Open GPS Directions
+                            </a>
+                        </div>
+                        <div id="singleStationMap"
+                             th:attr="data-lat=${station.latitude}, data-lng=${station.longitude}, data-name=${station.name}"
+                             style="height: 380px;">
+                        </div>
+                        <div class="mt-2 text-center small text-muted">
+                            Coordinates: <span th:text="${station.latitude}">0</span>, <span th:text="${station.longitude}">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Booking Guidance Box -->
+                    <div class="card card-modern p-4 bg-light border-0 shadow-sm">
+                        <h6 class="fw-bold text-navy mb-2"><i class="bi bi-shield-check text-success me-2"></i>Booking &amp; Cancellation Policy</h6>
+                        <ul class="small text-muted ps-3 mb-0">
+                            <li class="mb-1">Slots can be reserved up to 7 days in advance.</li>
+                            <li class="mb-1">Guaranteed slot reservations hold the charger exclusively for your vehicle.</li>
+                            <li class="mb-1">Free cancellation with full refund up to 2 hours before the booked start time.</li>
+                            <li>Unpaid reservations expire automatically after 15 minutes to prevent blocking availability.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

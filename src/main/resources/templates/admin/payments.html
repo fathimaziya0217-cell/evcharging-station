@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Manage Payments')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container-fluid px-lg-5">
+            <div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-cash-stack text-success me-2"></i>Payment Transactions Audit</h3>
+                    <p class="text-muted small mb-0">Audit verified gateway payments, demo simulations, and failed attempts.</p>
+                </div>
+                <div class="card bg-white p-2 px-3 border shadow-sm">
+                    <span class="small text-muted d-block">Total Verified Revenue:</span>
+                    <strong class="text-success fs-5">₹<span th:text="${totalRevenue}">0.00</span></strong>
+                </div>
+            </div>
+
+            <!-- Search and Filter Form -->
+            <div class="card card-modern p-3 mb-4 shadow-sm">
+                <form th:action="@{/admin/payments}" method="get" class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control form-control-sm" name="query" th:value="${query}" placeholder="Search payment ref, booking ref, or user email..." />
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" name="status">
+                            <option value="">-- All Payment Statuses --</option>
+                            <option value="SUCCESS" th:selected="${status == 'SUCCESS'}">SUCCESS</option>
+                            <option value="PENDING" th:selected="${status == 'PENDING'}">PENDING</option>
+                            <option value="FAILED" th:selected="${status == 'FAILED'}">FAILED</option>
+                            <option value="CANCELLED" th:selected="${status == 'CANCELLED'}">CANCELLED</option>
+                            <option value="REFUNDED" th:selected="${status == 'REFUNDED'}">REFUNDED</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex gap-1">
+                        <button type="submit" class="btn btn-navy btn-sm w-100">Filter</button>
+                        <a th:href="@{/admin/payments}" class="btn btn-outline-secondary btn-sm" title="Clear">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Payments Table -->
+            <div class="card card-modern p-4 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-0 mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Payment Ref</th>
+                                <th>Booking Ref</th>
+                                <th>Customer</th>
+                                <th>Method</th>
+                                <th>Amount (INR)</th>
+                                <th>Status</th>
+                                <th>Timestamp</th>
+                                <th>Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="p : ${payments}">
+                                <td class="fw-bold font-monospace text-dark" th:text="${p.paymentReference}">PAY-001</td>
+                                <td>
+                                    <a th:href="@{'/booking/' + ${p.bookingId}}" class="font-monospace small text-decoration-none" th:text="${p.bookingReference}">EVC-001</a>
+                                </td>
+                                <td>
+                                    <strong class="d-block" th:text="${p.userName}">Name</strong>
+                                    <span class="small text-muted" th:text="${p.userEmail}">email</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border" th:text="${p.paymentMethod}">DEMO</span>
+                                    <span th:if="${p.demo}" class="badge bg-warning text-dark border" style="font-size: 0.65rem;">SIMULATED</span>
+                                </td>
+                                <td class="fw-bold text-success">₹<span th:text="${p.amount}">0.00</span></td>
+                                <td>
+                                    <span th:if="${p.paymentStatus == 'SUCCESS'}" class="badge bg-success">Success</span>
+                                    <span th:if="${p.paymentStatus == 'FAILED'}" class="badge bg-danger">Failed</span>
+                                    <span th:if="${p.paymentStatus == 'CANCELLED'}" class="badge bg-secondary">Cancelled</span>
+                                    <span th:if="${p.paymentStatus == 'REFUNDED'}" class="badge bg-info text-dark">Refunded</span>
+                                    <span th:if="${p.paymentStatus == 'PENDING'}" class="badge bg-warning text-dark">Pending</span>
+                                </td>
+                                <td class="small text-muted" th:text="${p.paidAt != null ? p.paidAt : p.createdAt}">Timestamp</td>
+                                <td>
+                                    <a th:if="${p.paymentStatus == 'SUCCESS'}" th:href="@{'/payment/success/' + ${p.id}}" class="btn btn-sm btn-outline-dark" title="View Receipt">
+                                        <i class="bi bi-printer"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

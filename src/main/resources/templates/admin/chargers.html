@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Manage Chargers')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container-fluid px-lg-5">
+            <div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-plug-fill text-primary me-2"></i>Charger Points Management</h3>
+                    <p class="text-muted small mb-0">Configure installed EV charging guns, power ratings, pricing, and operational modes.</p>
+                </div>
+                <button type="button" class="btn btn-electric btn-sm" data-bs-toggle="collapse" data-bs-target="#newChargerCollapse">
+                    <i class="bi bi-plus-circle me-1"></i> Add New Charger Gun
+                </button>
+            </div>
+
+            <!-- Add Charger Form (Collapsible) -->
+            <div class="collapse mb-4" id="newChargerCollapse">
+                <div class="card card-modern p-4 shadow-sm border-success">
+                    <h5 class="fw-bold text-dark mb-3">Install / Configure Charger Point</h5>
+                    <form th:action="@{/admin/chargers/save}" th:object="${newCharger}" method="post" class="row g-3">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Select Station <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{stationId}" required>
+                                <option value="">-- Choose Station --</option>
+                                <option th:each="st : ${stations}" th:value="${st.id}" th:text="${st.name + ' (' + st.city + ')'}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Charger Identifier <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{chargerIdentifier}" placeholder="e.g. KNR-DC01" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Charger Type <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{chargerType}" required>
+                                <option value="DC Fast Charging">DC Fast Charging</option>
+                                <option value="AC Fast Charging">AC Fast Charging</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Connector Type <span class="text-danger">*</span></label>
+                            <select class="form-select" th:field="*{connectorType}" required>
+                                <option value="CCS2">CCS2</option>
+                                <option value="Type 2">Type 2</option>
+                                <option value="CHAdeMO">CHAdeMO</option>
+                                <option value="Bharat AC-001">Bharat AC-001</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Power Capacity (kW) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.1" class="form-control" th:field="*{powerKw}" placeholder="60.0" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Price per kWh (INR) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control" th:field="*{pricePerKwh}" placeholder="18.50" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Operational Status</label>
+                            <select class="form-select" th:field="*{operationalStatus}">
+                                <option value="OPERATIONAL">OPERATIONAL</option>
+                                <option value="MAINTENANCE">MAINTENANCE</option>
+                                <option value="DECOMMISSIONED">DECOMMISSIONED</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Description / Technical Notes</label>
+                            <input type="text" class="form-control" th:field="*{description}" placeholder="e.g. Dual-gun rapid charger unit" />
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-navy px-4">Save Charger Gun</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Filter by Station -->
+            <div class="card card-modern p-3 mb-4 shadow-sm">
+                <form th:action="@{/admin/chargers}" method="get" class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <select class="form-select" name="stationId" onchange="this.form.submit()">
+                            <option value="">-- All Stations --</option>
+                            <option th:each="st : ${stations}" th:value="${st.id}" th:text="${st.name + ' (' + st.city + ')'}" th:selected="${selectedStationId == st.id}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2" th:if="${selectedStationId != null}">
+                        <a th:href="@{/admin/chargers}" class="btn btn-outline-secondary btn-sm">Clear Filter</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Chargers Table -->
+            <div class="card card-modern p-4 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-0 mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>ID</th>
+                                <th>Identifier</th>
+                                <th>Station Location</th>
+                                <th>Type &amp; Connector</th>
+                                <th>Power</th>
+                                <th>Rate (INR)</th>
+                                <th>Live Availability</th>
+                                <th>Operational State</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="c : ${chargers}">
+                                <td class="fw-bold font-monospace" th:text="${c.id}">1</td>
+                                <td class="fw-bold text-dark font-monospace" th:text="${c.chargerIdentifier}">KNR-01</td>
+                                <td>
+                                    <strong class="d-block" th:text="${c.stationName}">Station</strong>
+                                    <span class="small text-muted" th:text="${c.stationCity}">City</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border" th:text="${c.connectorType}">CCS2</span>
+                                    <span class="d-block small text-muted" th:text="${c.chargerType}">DC Fast</span>
+                                </td>
+                                <td><strong th:text="${c.powerKw} + ' kW'">60 kW</strong></td>
+                                <td class="fw-bold text-success">₹<span th:text="${c.pricePerKwh}">18.50</span>/kWh</td>
+                                <td>
+                                    <span th:if="${c.availabilityStatus == 'AVAILABLE'}" class="badge bg-success">Available</span>
+                                    <span th:if="${c.availabilityStatus == 'OCCUPIED'}" class="badge bg-warning text-dark">Occupied</span>
+                                    <span th:if="${c.availabilityStatus == 'OFFLINE'}" class="badge bg-secondary">Offline</span>
+                                </td>
+                                <td>
+                                    <span th:if="${c.operationalStatus == 'OPERATIONAL'}" class="badge bg-success">OPERATIONAL</span>
+                                    <span th:if="${c.operationalStatus == 'MAINTENANCE'}" class="badge bg-warning text-dark">MAINTENANCE</span>
+                                    <span th:if="${c.operationalStatus == 'DECOMMISSIONED'}" class="badge bg-danger">DECOMMISSIONED</span>
+                                </td>
+                                <td>
+                                    <form th:action="@{'/admin/chargers/status/' + ${c.id}}" method="post" class="d-inline">
+                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                        <select name="status" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
+                                            <option value="OPERATIONAL" th:selected="${c.operationalStatus == 'OPERATIONAL'}">Active</option>
+                                            <option value="MAINTENANCE" th:selected="${c.operationalStatus == 'MAINTENANCE'}">Maintenance</option>
+                                            <option value="DECOMMISSIONED" th:selected="${c.operationalStatus == 'DECOMMISSIONED'}">Decommission</option>
+                                        </select>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

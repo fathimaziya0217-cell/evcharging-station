@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('How It Works')}"></head>
+<body>
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-5">
+        <div class="container">
+            <div class="text-center max-w-700 mx-auto mb-5">
+                <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-1 rounded-pill fw-semibold mb-2">
+                    Effortless EV Mobility
+                </span>
+                <h2 class="fw-bold text-dark">How EV Charge Works</h2>
+                <p class="text-muted">A modern end-to-end management platform connecting EV vehicle owners with smart charging stations.</p>
+            </div>
+
+            <div class="row g-4 mb-5">
+                <div class="col-md-4">
+                    <div class="card card-modern p-4 h-100 shadow-sm text-center">
+                        <div class="stat-icon green mx-auto mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-geo-alt-fill fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">1. Geo-Location Discovery</h5>
+                        <p class="small text-muted mb-0">Use OpenStreetMap &amp; Leaflet or manual city search to pinpoint the nearest charging stations across Kerala and other metro hubs.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card card-modern p-4 h-100 shadow-sm text-center">
+                        <div class="stat-icon blue mx-auto mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-shield-lock-fill fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">2. Concurrency-Safe Booking</h5>
+                        <p class="small text-muted mb-0">Our transactional Spring JDBC locking prevents double-booking so you never arrive at an occupied charging gun.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card card-modern p-4 h-100 shadow-sm text-center">
+                        <div class="stat-icon amber mx-auto mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-credit-card-2-front-fill fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">3. Transparent Payments</h5>
+                        <p class="small text-muted mb-0">Integrated with Indian Rupee (INR) pricing, Demo testing simulation, and Razorpay payment adapter architecture.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a th:href="@{/stations}" class="btn btn-electric px-4 py-2 fw-semibold">
+                    <i class="bi bi-geo-alt me-1"></i> Explore All Charging Stations
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

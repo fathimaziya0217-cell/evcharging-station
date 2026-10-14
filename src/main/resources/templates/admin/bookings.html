@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Manage Bookings')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container-fluid px-lg-5">
+            <div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-card-checklist text-primary me-2"></i>Booking Management</h3>
+                    <p class="text-muted small mb-0">Inspect all reserved slots, monitor payment statuses, and manage customer cancellations.</p>
+                </div>
+            </div>
+
+            <!-- Filters Form -->
+            <div class="card card-modern p-3 mb-4 shadow-sm">
+                <form th:action="@{/admin/bookings}" method="get" class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control form-control-sm" name="query" th:value="${query}" placeholder="Search reference, customer, or station..." />
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" name="status">
+                            <option value="">-- All Statuses --</option>
+                            <option value="CONFIRMED" th:selected="${status == 'CONFIRMED'}">CONFIRMED</option>
+                            <option value="PENDING_PAYMENT" th:selected="${status == 'PENDING_PAYMENT'}">PENDING_PAYMENT</option>
+                            <option value="COMPLETED" th:selected="${status == 'COMPLETED'}">COMPLETED</option>
+                            <option value="CANCELLED" th:selected="${status == 'CANCELLED'}">CANCELLED</option>
+                            <option value="EXPIRED" th:selected="${status == 'EXPIRED'}">EXPIRED</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" class="form-control form-control-sm" name="date" th:value="${date}" />
+                    </div>
+                    <div class="col-md-2 d-flex gap-1">
+                        <button type="submit" class="btn btn-navy btn-sm w-100">Filter</button>
+                        <a th:href="@{/admin/bookings}" class="btn btn-outline-secondary btn-sm" title="Clear">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Bookings Table -->
+            <div class="card card-modern p-4 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-0 mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Booking Ref</th>
+                                <th>Customer</th>
+                                <th>Station &amp; Gun</th>
+                                <th>Date &amp; Window</th>
+                                <th>Amount</th>
+                                <th>Booking Status</th>
+                                <th>Payment</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="b : ${bookings}">
+                                <td>
+                                    <a th:href="@{'/booking/' + ${b.id}}" class="fw-bold font-monospace text-primary text-decoration-none" th:text="${b.bookingReference}">EVC-01</a>
+                                </td>
+                                <td>
+                                    <strong class="d-block text-dark" th:text="${b.userName}">Rahul</strong>
+                                    <span class="small text-muted" th:text="${b.userPhone}">+91 98470</span>
+                                </td>
+                                <td>
+                                    <strong class="d-block" th:text="${b.stationName}">Station</strong>
+                                    <span class="small text-muted" th:text="${b.chargerIdentifier + ' (' + b.connectorType + ')'}">GUN-01</span>
+                                </td>
+                                <td>
+                                    <strong class="d-block" th:text="${b.bookingDate}">Date</strong>
+                                    <span class="small text-muted" th:text="${b.startTime + ' - ' + b.endTime}">Time</span>
+                                </td>
+                                <td class="fw-bold text-success">₹<span th:text="${b.estimatedAmount}">0.00</span></td>
+                                <td>
+                                    <span th:if="${b.bookingStatus == 'CONFIRMED'}" class="badge bg-success">Confirmed</span>
+                                    <span th:if="${b.bookingStatus == 'PENDING_PAYMENT'}" class="badge bg-warning text-dark">Pending Pay</span>
+                                    <span th:if="${b.bookingStatus == 'COMPLETED'}" class="badge bg-primary">Completed</span>
+                                    <span th:if="${b.bookingStatus == 'CANCELLED'}" class="badge bg-danger">Cancelled</span>
+                                    <span th:if="${b.bookingStatus == 'EXPIRED'}" class="badge bg-secondary">Expired</span>
+                                </td>
+                                <td>
+                                    <span th:if="${b.paymentStatus == 'PAID'}" class="badge bg-success">PAID</span>
+                                    <span th:if="${b.paymentStatus == 'PENDING'}" class="badge bg-warning text-dark">PENDING</span>
+                                    <span th:if="${b.paymentStatus == 'FAILED'}" class="badge bg-danger">FAILED</span>
+                                    <span th:if="${b.paymentStatus == 'REFUNDED'}" class="badge bg-info text-dark">REFUNDED</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a th:href="@{'/booking/' + ${b.id}}" class="btn btn-sm btn-outline-secondary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <form th:if="${b.bookingStatus == 'CONFIRMED' or b.bookingStatus == 'PENDING_PAYMENT'}"
+                                              th:action="@{'/booking/' + ${b.id} + '/cancel'}" method="post"
+                                              onsubmit="return confirm('Cancel this customer booking?');">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                            <input type="hidden" name="reason" value="Cancelled by Administrator" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Admin Cancel">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

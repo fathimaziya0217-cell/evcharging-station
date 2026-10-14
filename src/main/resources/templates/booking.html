@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Book Charging Slot - EV Charge')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4 py-md-5">
+        <div class="container">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/stations}">Stations</a></li>
+                    <li class="breadcrumb-item" th:if="${station != null}">
+                        <a th:href="@{'/stations/' + ${station.id}}" th:text="${station.name}">Station</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Book Slot</li>
+                </ol>
+            </nav>
+
+            <!-- Dynamic Error & Info Alerts -->
+            <div th:if="${errorMessage != null}" class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong th:text="${errorMessage}">Error occurred during booking.</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${infoMessage != null}" class="alert alert-info alert-dismissible fade show shadow-sm mb-4" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <span th:text="${infoMessage}">Information message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-9">
+                    <div class="card card-modern shadow-sm border-0 p-4 p-md-5">
+                        <!-- Card Header -->
+                        <div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+                            <div>
+                                <h3 class="fw-bold mb-1 text-dark">
+                                    <i class="bi bi-calendar2-plus-fill text-success me-2"></i>Book Charging Slot
+                                </h3>
+                                <p class="text-muted small mb-0">Select your charger, date, and preferred time slot to reserve the charging gun.</p>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                <i class="bi bi-shield-lock-fill me-1"></i> Double-Booking Protected
+                            </span>
+                        </div>
+
+                        <!-- Step 1: Charging Station & Charger Selection Bar -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6" th:if="${station != null}">
+                                <div class="p-3 bg-white rounded-3 border h-100 shadow-xs">
+                                    <span class="small fw-bold text-muted d-block text-uppercase">1. Charging Location</span>
+                                    <h6 class="fw-bold text-dark mb-1 fs-5" th:text="${station.name}">EV Charge Caltex Hub</h6>
+                                    <p class="small text-muted mb-0">
+                                        <i class="bi bi-geo-alt text-danger me-1"></i>
+                                        <span th:text="${station.address + ', ' + station.city}">Kannur, Kerala</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6" th:if="${chargers != null and !#lists.isEmpty(chargers)}">
+                                <div class="p-3 bg-white rounded-3 border h-100 shadow-xs">
+                                    <span class="small fw-bold text-muted d-block text-uppercase">2. Select Charging Gun</span>
+                                    <div class="mt-1">
+                                        <select class="form-select fw-semibold" id="chargerSelector" onchange="switchCharger(this.value)">
+                                            <option th:each="c : ${chargers}" 
+                                                    th:value="${c.id}" 
+                                                    th:text="${c.chargerIdentifier + ' — ' + c.powerKw + ' kW ' + c.connectorType + ' (₹' + c.pricePerKwh + '/kWh)'}"
+                                                    th:selected="${selectedCharger != null and selectedCharger.id == c.id}">
+                                                GUN-01 — 60 kW CCS2 (₹18.50/kWh)
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <small class="text-muted d-block mt-1" th:if="${selectedCharger != null}">
+                                        Type: <strong th:text="${selectedCharger.chargerType}">DC Fast Charging</strong> &bull; 
+                                        Connector: <strong th:text="${selectedCharger.connectorType}">CCS2</strong>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Date Selector -->
+                        <div class="card bg-light border-0 p-3 mb-4 rounded-3">
+                            <span class="small fw-bold text-muted d-block text-uppercase mb-2">3. Select Charging Date</span>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <input type="date" class="form-control" style="max-width: 200px;" id="bookingDatePicker" 
+                                       th:value="${selectedDate}" 
+                                       th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                                       onchange="switchDate(this.value)" />
+
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="quickSelectDate(0)">Today</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="quickSelectDate(1)">Tomorrow</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="quickSelectDate(2)">Day After</button>
+                                <span class="text-muted small ms-auto d-none d-md-inline">
+                                    <i class="bi bi-clock me-1"></i> Slots are shown in 1-hour reserved windows
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Available Time Slots Grid -->
+                        <div class="mb-4" th:if="${availability != null}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-dark mb-0 text-uppercase">
+                                    4. Choose an Available Slot for <span class="text-primary" th:text="${#temporals.format(selectedDate, 'dd MMMM yyyy')}">15 October 2026</span>
+                                </h6>
+                                <div class="d-flex gap-2 small">
+                                    <span class="badge bg-success"><i class="bi bi-check me-1"></i>Available</span>
+                                    <span class="badge bg-secondary">Booked / Past</span>
+                                </div>
+                            </div>
+
+                            <p class="small text-muted mb-3">Click on any green slot to reserve your charging session:</p>
+
+                            <div class="row g-2" id="slotsContainer">
+                                <div th:each="slot : ${availability.slots}" class="col-6 col-md-4 col-lg-3">
+                                    <div th:class="${slot.available ? 'slot-pill available ' + (defaultStartTime != null and defaultStartTime.equals(slot.startTime) ? 'selected' : '') : 'slot-pill unavailable'}"
+                                         th:attr="data-start=${slot.startTime}, data-end=${slot.endTime}, data-label=${slot.displayLabel}"
+                                         onclick="handleSlotClick(this)">
+                                        <div class="fw-bold small slot-time" th:text="${slot.displayLabel}">10:00 AM - 11:00 AM</div>
+                                        <div class="slot-status small mt-1" style="font-size: 0.72rem;">
+                                            <span th:if="${slot.available}">
+                                                <i class="bi bi-check-circle-fill me-1 text-success"></i>Available
+                                            </span>
+                                            <span th:unless="${slot.available}" th:text="${slot.reason}">Booked</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Alert if no slots available -->
+                            <div th:if="${#lists.isEmpty(availability.slots)}" class="alert alert-warning small mt-2">
+                                No slots configured for this date. Please choose another date or charger above.
+                            </div>
+                        </div>
+
+                        <!-- Main Booking Form -->
+                        <form th:action="@{/booking/create}" th:object="${bookingRequest}" method="post" id="confirmBookingForm" onsubmit="return validateBookingForm()">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                            <input type="hidden" id="formStationId" th:field="*{stationId}" />
+                            <input type="hidden" id="formChargerId" th:field="*{chargerId}" />
+                            <input type="hidden" id="formBookingDate" th:field="*{bookingDate}" />
+                            <input type="hidden" id="startTimeInput" th:field="*{startTime}" />
+                            <input type="hidden" id="endTimeInput" th:field="*{endTime}" />
+
+                            <!-- Hidden parameters for live JavaScript cost calculation -->
+                            <input type="hidden" id="chargerPowerRate" th:if="${selectedCharger != null}" th:value="${selectedCharger.powerKw}" />
+                            <input type="hidden" id="chargerPriceRate" th:if="${selectedCharger != null}" th:value="${selectedCharger.pricePerKwh}" />
+
+                            <!-- Cost Estimate & Confirmation Box -->
+                            <div class="card border-success p-3 p-md-4 mb-4 bg-success bg-opacity-10 rounded-3 shadow-xs">
+                                <div class="row align-items-center">
+                                    <div class="col-sm-7">
+                                        <span class="small text-muted d-block text-uppercase fw-semibold">Selected Slot Window:</span>
+                                        <h5 class="fw-bold text-dark mb-1" id="displaySelectedSlot">
+                                            <span th:if="${defaultStartTime != null and defaultEndTime != null}" 
+                                                  th:text="${defaultStartTime + ' - ' + defaultEndTime + ' (1 Hour)'}">
+                                                10:00 - 11:00 (1 Hour)
+                                            </span>
+                                            <span th:unless="${defaultStartTime != null and defaultEndTime != null}">
+                                                Please click an available green slot above
+                                            </span>
+                                        </h5>
+                                        <small class="text-muted" id="displayEstimatedEnergy">Estimated Energy: -- kWh</small>
+                                    </div>
+                                    <div class="col-sm-5 text-sm-end mt-3 mt-sm-0">
+                                        <span class="small text-muted d-block text-uppercase fw-semibold">Estimated Amount:</span>
+                                        <h3 class="fw-bold text-success mb-0" id="displayEstimatedAmount">₹--</h3>
+                                        <small class="text-muted">Inclusive of all taxes</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Big Confirm & Proceed to Payment Button -->
+                            <button type="submit" id="btnConfirmBooking" class="btn btn-electric w-100 py-3 fs-5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-shield-lock-fill"></i>
+                                <span>Confirm Booking &amp; Proceed to Payment</span>
+                            </button>
+                            <small class="text-center text-muted d-block mt-2">
+                                <i class="bi bi-info-circle me-1"></i> You will be redirected to the secure Payment Checkout to complete your reservation.
+                            </small>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+    <!-- Client-side Logic for Slot Selection, Switching, and Live Price Calculation -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const stationId = /*[[${station != null ? station.id : ''}]]*/ '';
+        let currentChargerId = /*[[${selectedCharger != null ? selectedCharger.id : ''}]]*/ '';
+        let currentDate = /*[[${selectedDate}]]*/ '';
+        const chargerPower = parseFloat(document.getElementById('chargerPowerRate')?.value || '50');
+        const chargerPrice = parseFloat(document.getElementById('chargerPriceRate')?.value || '18');
+
+        function switchCharger(newChargerId) {
+            window.location.href = '/booking/new?stationId=' + stationId + '&chargerId=' + newChargerId + '&date=' + currentDate;
+        }
+
+        function switchDate(newDate) {
+            window.location.href = '/booking/new?stationId=' + stationId + '&chargerId=' + currentChargerId + '&date=' + newDate;
+        }
+
+        function quickSelectDate(daysAhead) {
+            const d = new Date();
+            d.setDate(d.getDate() + daysAhead);
+            const isoDate = d.toISOString().split('T')[0];
+            switchDate(isoDate);
+        }
+
+        function handleSlotClick(element) {
+            if (!element.classList.contains('available')) {
+                return;
+            }
+
+            document.querySelectorAll('.slot-pill').forEach(p => p.classList.remove('selected'));
+            element.classList.add('selected');
+
+            const start = element.getAttribute('data-start');
+            const end = element.getAttribute('data-end');
+            const label = element.getAttribute('data-label') || (start + ' - ' + end);
+
+            document.getElementById('startTimeInput').value = start;
+            document.getElementById('endTimeInput').value = end;
+
+            updateCalculation(label);
+        }
+
+        function updateCalculation(label) {
+            const energy = (chargerPower * 0.85).toFixed(2);
+            const amount = (energy * chargerPrice).toFixed(2);
+
+            document.getElementById('displaySelectedSlot').innerText = label + ' (1 Hour)';
+            document.getElementById('displayEstimatedEnergy').innerText = 'Estimated Energy: ' + energy + ' kWh (@ ₹' + chargerPrice + '/kWh)';
+            document.getElementById('displayEstimatedAmount').innerText = '₹' + amount;
+        }
+
+        function validateBookingForm() {
+            const start = document.getElementById('startTimeInput').value;
+            const end = document.getElementById('endTimeInput').value;
+            if (!start || !end) {
+                alert('Please click on one of the available green time slots above before proceeding to payment.');
+                return false;
+            }
+            return true;
+        }
+
+        // Initialize calculation on page load if default slot is pre-selected
+        document.addEventListener('DOMContentLoaded', function () {
+            const selectedPill = document.querySelector('.slot-pill.selected');
+            if (selectedPill) {
+                const label = selectedPill.getAttribute('data-label') || 
+                             (selectedPill.getAttribute('data-start') + ' - ' + selectedPill.getAttribute('data-end'));
+                updateCalculation(label);
+            }
+        });
+        /*]]>*/
+    </script>
+</body>
+</html>

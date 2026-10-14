@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('User Dashboard')}"></head>
+<body>
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container">
+            <!-- Welcome Header -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 mb-4 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1">
+                        Welcome, <span class="text-success" th:text="${user.fullName}">User</span>! 👋
+                    </h3>
+                    <p class="text-muted small mb-0">Manage your active EV charging sessions, bookings, and vehicles.</p>
+                </div>
+                <div class="mt-3 mt-md-0 d-flex gap-2">
+                    <a th:href="@{/stations}" class="btn btn-navy btn-sm">
+                        <i class="bi bi-geo-alt me-1"></i> Find Stations
+                    </a>
+                    <a th:href="@{/booking/new}" class="btn btn-electric btn-sm">
+                        <i class="bi bi-calendar-plus me-1"></i> Book a Slot
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats Overview Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="bi bi-calendar2-check-fill"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Total Bookings</span>
+                            <h3 class="fw-bold mb-0" th:text="${totalBookings}">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Upcoming Slots</span>
+                            <h3 class="fw-bold mb-0 text-primary" th:text="${upcomingBookings}">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="bi bi-battery-charging"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Completed Sessions</span>
+                            <h3 class="fw-bold mb-0" th:text="${completedSessions}">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="stat-icon amber">
+                            <i class="bi bi-wallet-fill"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Total Spent</span>
+                            <h3 class="fw-bold mb-0 text-success">₹<span th:text="${totalSpent}">0.00</span></h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Recent Bookings Table -->
+                <div class="col-lg-8">
+                    <div class="card card-modern p-4 mb-4 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-dark mb-0">
+                                <i class="bi bi-clock me-2 text-primary"></i>Recent Bookings
+                            </h5>
+                            <a th:href="@{/user/my-bookings}" class="btn btn-outline-secondary btn-sm">
+                                View All Bookings
+                            </a>
+                        </div>
+
+                        <div th:if="${#lists.isEmpty(recentBookings)}" class="alert alert-light text-center py-4 border">
+                            <i class="bi bi-calendar-x fs-3 text-muted d-block mb-2"></i>
+                            You don't have any recent bookings yet.
+                            <div class="mt-2">
+                                <a th:href="@{/stations}" class="btn btn-electric btn-sm">Find Stations Now</a>
+                            </div>
+                        </div>
+
+                        <div th:unless="${#lists.isEmpty(recentBookings)}" class="table-responsive">
+                            <table class="table table-hover align-middle border-0 mb-0">
+                                <thead class="table-light small text-muted">
+                                    <tr>
+                                        <th>Reference</th>
+                                        <th>Station</th>
+                                        <th>Date &amp; Time</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="b : ${recentBookings}">
+                                        <td>
+                                            <a th:href="@{'/booking/' + ${b.id}}" class="fw-bold text-dark font-monospace text-decoration-none" th:text="${b.bookingReference}">EVC-001</a>
+                                        </td>
+                                        <td th:text="${b.stationName}">Station Name</td>
+                                        <td>
+                                            <span class="small d-block fw-semibold" th:text="${b.bookingDate}">Date</span>
+                                            <span class="small text-muted" th:text="${b.startTime + ' - ' + b.endTime}">Time</span>
+                                        </td>
+                                        <td class="fw-bold text-success">₹<span th:text="${b.estimatedAmount}">0.00</span></td>
+                                        <td>
+                                            <span th:if="${b.bookingStatus == 'CONFIRMED'}" class="badge bg-success">Confirmed</span>
+                                            <span th:if="${b.bookingStatus == 'PENDING_PAYMENT'}" class="badge bg-warning text-dark">Pending Pay</span>
+                                            <span th:if="${b.bookingStatus == 'COMPLETED'}" class="badge bg-primary">Completed</span>
+                                            <span th:if="${b.bookingStatus == 'CANCELLED'}" class="badge bg-danger">Cancelled</span>
+                                        </td>
+                                        <td>
+                                            <a th:if="${b.bookingStatus == 'PENDING_PAYMENT'}" th:href="@{'/payment/' + ${b.id}}" class="btn btn-sm btn-electric">
+                                                Pay
+                                            </a>
+                                            <a th:unless="${b.bookingStatus == 'PENDING_PAYMENT'}" th:href="@{'/booking/' + ${b.id}}" class="btn btn-sm btn-outline-secondary">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Quick Profile & Registered Vehicles -->
+                <div class="col-lg-4">
+                    <div class="card card-modern p-4 mb-4 shadow-sm">
+                        <h6 class="fw-bold text-dark mb-3"><i class="bi bi-person-circle text-primary me-2"></i>Profile &amp; Vehicles</h6>
+                        <div class="mb-3 small">
+                            <span class="text-muted d-block">Registered Name:</span>
+                            <strong th:text="${user.fullName}">Name</strong>
+                        </div>
+                        <div class="mb-3 small">
+                            <span class="text-muted d-block">Email &amp; Mobile:</span>
+                            <span th:text="${user.email + ' / ' + user.phone}">email</span>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-bold text-dark">My Vehicles:</span>
+                            <a th:href="@{/user/profile}" class="btn btn-outline-primary btn-sm" style="font-size: 0.75rem;">Manage</a>
+                        </div>
+
+                        <div th:if="${#lists.isEmpty(user.vehicles)}" class="text-muted small">
+                            No vehicles added.
+                        </div>
+
+                        <div th:each="v : ${user.vehicles}" class="p-2 bg-light rounded-3 mb-2 border small">
+                            <div class="fw-bold text-dark" th:text="${v.registrationNumber}">KL-13-AQ-4521</div>
+                            <div class="text-muted" th:text="${v.make + ' ' + v.model + ' (' + v.preferredConnector + ')'}">Tata Nexon (CCS2)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

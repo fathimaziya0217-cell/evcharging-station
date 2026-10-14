@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Payment Receipt')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <!-- Action Bar (Hidden when printing) -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+                        <a th:href="@{/user/my-bookings}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Back to My Bookings
+                        </a>
+                        <button type="button" onclick="window.print()" class="btn btn-navy btn-sm">
+                            <i class="bi bi-printer me-1"></i> Print Receipt / Save PDF
+                        </button>
+                    </div>
+
+                    <!-- Printable Receipt Card -->
+                    <div class="card card-modern shadow-lg p-4 p-md-5 printable-receipt border-0">
+                        <div class="text-center pb-4 mb-4 border-bottom">
+                            <div class="stat-icon green mx-auto mb-2" style="width: 64px; height: 64px;">
+                                <i class="bi bi-check-lg fs-1"></i>
+                            </div>
+                            <h3 class="fw-bold text-success mb-1">Charging Slot Confirmed!</h3>
+                            <p class="text-muted small mb-0">Official Booking &amp; Payment Transaction Receipt</p>
+                            <span th:if="${payment.demo}" class="badge bg-warning text-dark border mt-2">
+                                DEMONSTRATION SIMULATION (NO REAL MONEY TRANSFERRED)
+                            </span>
+                        </div>
+
+                        <!-- Receipt Details Grid -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Payment Reference:</span>
+                                <strong class="fs-6 text-dark font-monospace" th:text="${payment.paymentReference}">PAY-123456</strong>
+                            </div>
+                            <div class="col-sm-6 text-sm-end">
+                                <span class="text-muted small d-block">Booking Reference:</span>
+                                <strong class="fs-6 text-primary font-monospace" th:text="${booking.bookingReference}">EVC-123456</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Transaction Date:</span>
+                                <span class="text-dark" th:text="${payment.paidAt != null ? payment.paidAt : payment.createdAt}">2026-10-13 10:00</span>
+                            </div>
+                            <div class="col-sm-6 text-sm-end">
+                                <span class="text-muted small d-block">Payment Method:</span>
+                                <span class="badge bg-light text-dark border" th:text="${payment.paymentMethod}">DEMO</span>
+                            </div>
+                        </div>
+
+                        <!-- Service Details Table -->
+                        <div class="table-responsive mb-4">
+                            <table class="table table-bordered align-middle">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Charging Facility</th>
+                                        <th>Schedule</th>
+                                        <th class="text-end">Amount (INR)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <strong class="d-block">EV Slot Reservation</strong>
+                                            <span class="small text-muted" th:text="${booking.chargerIdentifier + ' (' + booking.chargerPower + ' kW ' + booking.connectorType + ')'}">Charger Info</span>
+                                        </td>
+                                        <td th:text="${booking.stationName + ', ' + booking.stationCity}">Station Name</td>
+                                        <td th:text="${booking.bookingDate + ', ' + booking.startTime + ' - ' + booking.endTime}">Slot Window</td>
+                                        <td class="text-end fw-bold">₹<span th:text="${payment.amount}">500.00</span></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="3" class="text-end">Total Paid:</th>
+                                        <th class="text-end text-success fs-5">₹<span th:text="${payment.amount}">500.00</span></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Footer notes -->
+                        <div class="p-3 bg-light rounded-3 small text-muted">
+                            <div class="fw-bold text-dark mb-1"><i class="bi bi-info-circle me-1"></i> Instructions for Charging Session:</div>
+                            <ul class="ps-3 mb-0">
+                                <li>Arrive at the designated station 5 minutes before your reserved start time.</li>
+                                <li>Show this booking reference to the station attendant or scan the connector.</li>
+                                <li>Eligible for cancellation up to 2 hours before the session start time.</li>
+                            </ul>
+                        </div>
+
+                        <div class="text-center mt-4 pt-3 border-top no-print">
+                            <a th:href="@{/user/dashboard}" class="btn btn-electric px-4">
+                                <i class="bi bi-speedometer2 me-1"></i> Go to User Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

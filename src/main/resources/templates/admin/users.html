@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Manage Users')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container-fluid px-lg-5">
+            <div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-people-fill text-primary me-2"></i>User Accounts Management</h3>
+                    <p class="text-muted small mb-0">View registered EV customers, monitor account states, and toggle access.</p>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <div class="card card-modern p-3 mb-4 shadow-sm">
+                <form th:action="@{/admin/users}" method="get" class="row g-2">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" name="query" th:value="${query}" placeholder="Search by name, email, or mobile..." />
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-navy w-100">Search</button>
+                    </div>
+                    <div class="col-md-2" th:if="${query != null and !query.isBlank()}">
+                        <a th:href="@{/admin/users}" class="btn btn-outline-secondary w-100">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card card-modern p-4 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-0 mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>User ID</th>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>Mobile</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Registered At</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="u : ${users}">
+                                <td class="fw-bold font-monospace" th:text="${u.id}">1</td>
+                                <td class="fw-semibold text-dark" th:text="${u.fullName}">Name</td>
+                                <td th:text="${u.email}">email</td>
+                                <td th:text="${u.phone}">phone</td>
+                                <td>
+                                    <span th:if="${u.role == 'ROLE_ADMIN'}" class="badge bg-danger">ADMIN</span>
+                                    <span th:unless="${u.role == 'ROLE_ADMIN'}" class="badge bg-secondary">USER</span>
+                                </td>
+                                <td>
+                                    <span th:if="${u.active}" class="badge bg-success">Active</span>
+                                    <span th:unless="${u.active}" class="badge bg-danger">Suspended</span>
+                                </td>
+                                <td class="small text-muted" th:text="${u.createdAt}">Date</td>
+                                <td>
+                                    <form th:unless="${u.role == 'ROLE_ADMIN'}" th:action="@{'/admin/users/toggle/' + ${u.id}}" method="post">
+                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                        <input type="hidden" name="active" th:value="${!u.active}" />
+                                        <button type="submit" th:class="${u.active ? 'btn btn-sm btn-outline-danger' : 'btn btn-sm btn-outline-success'}">
+                                            <span th:text="${u.active ? 'Deactivate' : 'Activate'}">Toggle</span>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

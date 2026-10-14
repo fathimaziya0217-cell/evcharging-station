@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Charging Session - ' + ${session.sessionReference})}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <a th:href="@{/user/dashboard}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                        </a>
+                        <span th:if="${session.simulated}" class="badge bg-warning text-dark border">
+                            SIMULATED TELEMETRY (COLLEGE DEMO)
+                        </span>
+                    </div>
+
+                    <div class="card card-modern p-4 p-md-5 shadow-lg border-0">
+                        <div class="d-flex justify-content-between align-items-start pb-3 mb-4 border-bottom">
+                            <div>
+                                <span class="badge bg-light text-dark font-monospace border mb-1" th:text="${session.sessionReference}">SES-001</span>
+                                <h3 class="fw-bold text-dark mb-0">Vehicle Charging Session</h3>
+                            </div>
+                            <div>
+                                <span th:if="${session.sessionStatus == 'COMPLETED'}" class="badge bg-success fs-6">Completed</span>
+                                <span th:if="${session.sessionStatus == 'IN_PROGRESS'}" class="badge bg-warning text-dark fs-6">In Progress</span>
+                                <span th:if="${session.sessionStatus == 'SCHEDULED'}" class="badge bg-primary fs-6">Scheduled</span>
+                                <span th:if="${session.sessionStatus == 'CANCELLED'}" class="badge bg-danger fs-6">Cancelled</span>
+                            </div>
+                        </div>
+
+                        <!-- Battery State of Charge (SoC) Progress -->
+                        <div class="card bg-light border p-3 mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small fw-bold text-dark"><i class="bi bi-battery-charging text-success me-1"></i> Battery State of Charge (SoC)</span>
+                                <span class="small text-muted">
+                                    <span th:text="${session.initialSocPercent}">20</span>% &rarr; 
+                                    <strong class="text-success"><span th:text="${session.finalSocPercent}">80</span>%</strong>
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" 
+                                     th:style="'width: ' + ${session.finalSocPercent} + '%;'" 
+                                     th:aria-valuenow="${session.finalSocPercent}" aria-valuemin="0" aria-valuemax="100">
+                                    <span th:text="${session.finalSocPercent} + '%'">80%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Session Details Grid -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Station Location:</span>
+                                <strong class="fs-6 text-dark" th:text="${session.stationName}">Station Name</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Charging Gun:</span>
+                                <strong class="fs-6 text-dark" th:text="${session.chargerIdentifier}">GUN-01</strong>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Energy Delivered:</span>
+                                <h4 class="fw-bold text-success mb-0"><span th:text="${session.energyConsumedKwh}">0.00</span> kWh</h4>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Final Calculated Cost:</span>
+                                <h4 class="fw-bold text-dark mb-0">₹<span th:text="${session.finalAmount}">0.00</span></h4>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Session Start Time:</span>
+                                <span class="text-dark small" th:text="${session.startTime != null ? session.startTime : 'Pending vehicle arrival'}">Start</span>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted small d-block">Session End Time:</span>
+                                <span class="text-dark small" th:text="${session.endTime != null ? session.endTime : 'Pending session completion'}">End</span>
+                            </div>
+                        </div>
+
+                        <!-- Session Notes -->
+                        <div class="p-3 bg-light rounded-3 small text-muted border" th:if="${session.notes != null}">
+                            <strong>Telemetry Notes:</strong>
+                            <p class="mb-0 mt-1" th:text="${session.notes}">Notes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

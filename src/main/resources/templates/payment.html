@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Secure Payment Checkout - EV Charge')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4 py-md-5">
+        <div class="container">
+            <!-- Breadcrumb Navigation -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/}">Home</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/stations}">Stations</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{'/stations/' + ${booking.stationId}}">Station Details</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Payment Checkout</li>
+                </ol>
+            </nav>
+
+            <div class="row g-4 justify-content-center">
+                <!-- Left Column: Payment Methods Selection -->
+                <div class="col-lg-8">
+                    <div class="card card-modern shadow-sm border-0 mb-4">
+                        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 class="fw-bold mb-0 text-dark">
+                                    <i class="bi bi-shield-check text-success me-2"></i>Select Payment Method
+                                </h4>
+                                <small class="text-muted">Choose your preferred payment method to confirm slot reservation.</small>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                <i class="bi bi-lock-fill me-1"></i> 256-Bit Secure
+                            </span>
+                        </div>
+
+                        <div class="card-body p-4">
+                            <!-- Main Checkout Form -->
+                            <form id="paymentCheckoutForm" th:action="@{/payment/process}" th:object="${paymentRequest}" method="post">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <input type="hidden" th:field="*{bookingId}" />
+                                <input type="hidden" id="selectedPaymentMethod" th:field="*{paymentMethod}" value="UPI" />
+
+                                <!-- Nav Tabs for Payment Methods -->
+                                <ul class="nav nav-pills nav-fill gap-2 mb-4 p-2 bg-light rounded-3" id="paymentMethodTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active fw-semibold py-2 d-flex align-items-center justify-content-center gap-2" 
+                                                id="tab-upi" data-bs-toggle="pill" data-bs-target="#content-upi" type="button" role="tab"
+                                                onclick="setPaymentMethod('UPI')">
+                                            <i class="bi bi-qr-code-scan fs-5 text-success"></i>
+                                            <span>UPI / QR</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link fw-semibold py-2 d-flex align-items-center justify-content-center gap-2" 
+                                                id="tab-card" data-bs-toggle="pill" data-bs-target="#content-card" type="button" role="tab"
+                                                onclick="setPaymentMethod('CARD')">
+                                            <i class="bi bi-credit-card-2-front fs-5 text-primary"></i>
+                                            <span>Debit / Credit Card</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link fw-semibold py-2 d-flex align-items-center justify-content-center gap-2" 
+                                                id="tab-netbanking" data-bs-toggle="pill" data-bs-target="#content-netbanking" type="button" role="tab"
+                                                onclick="setPaymentMethod('NETBANKING')">
+                                            <i class="bi bi-bank fs-5 text-warning"></i>
+                                            <span>Net Banking</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link fw-semibold py-2 d-flex align-items-center justify-content-center gap-2" 
+                                                id="tab-wallet" data-bs-toggle="pill" data-bs-target="#content-wallet" type="button" role="tab"
+                                                onclick="setPaymentMethod('WALLET')">
+                                            <i class="bi bi-wallet2 fs-5 text-info"></i>
+                                            <span>EV Wallet</span>
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <!-- Tab Content Panels -->
+                                <div class="tab-content" id="paymentTabContent">
+                                    <!-- TAB 1: UPI -->
+                                    <div class="tab-pane fade show active" id="content-upi" role="tabpanel">
+                                        <div class="border rounded-3 p-4 bg-white mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h6 class="fw-bold mb-0 text-dark">
+                                                    <i class="bi bi-phone text-success me-2"></i>Pay via UPI App / Virtual Payment Address
+                                                </h6>
+                                                <div class="d-flex gap-2">
+                                                    <span class="badge bg-light text-dark border">Google Pay</span>
+                                                    <span class="badge bg-light text-dark border">PhonePe</span>
+                                                    <span class="badge bg-light text-dark border">Paytm</span>
+                                                    <span class="badge bg-light text-dark border">BHIM</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted">Enter UPI ID (VPA):</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-light"><i class="bi bi-at"></i></span>
+                                                    <input type="text" class="form-control" th:field="*{upiId}" id="upiIdInput" 
+                                                           placeholder="e.g. rahul@okaxis, yourname@upi" value="rahul.ev@okaxis" required>
+                                                    <button type="button" class="btn btn-outline-success" onclick="verifyUpiId()">
+                                                        <i class="bi bi-check2-circle me-1"></i> Verify
+                                                    </button>
+                                                </div>
+                                                <small id="upiVerifyMsg" class="text-success mt-1 d-block" style="font-size: 0.8rem;">
+                                                    <i class="bi bi-check-circle-fill me-1"></i> Verified EV Driver Account
+                                                </small>
+                                            </div>
+
+                                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="quickFillUpi('rahul.ev@okaxis')">@okaxis</button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="quickFillUpi('rahul.ev@okhdfcbank')">@okhdfcbank</button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="quickFillUpi('rahul.ev@ybl')">@ybl</button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="quickFillUpi('rahul.ev@paytm')">@paytm</button>
+                                            </div>
+
+                                            <hr class="my-3 text-muted">
+
+                                            <!-- Scan QR Section -->
+                                            <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3">
+                                                <div class="text-center p-2 bg-white rounded border shadow-sm" style="width: 80px; height: 80px;">
+                                                    <i class="bi bi-qr-code text-dark" style="font-size: 3.5rem; line-height: 1;"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="fw-bold mb-1 text-dark">Instant QR Code Checkout</h6>
+                                                    <p class="small text-muted mb-0">Open any UPI app on your phone and scan the on-screen code at the station kiosk or click Pay below.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB 2: CREDIT / DEBIT CARD -->
+                                    <div class="tab-pane fade" id="content-card" role="tabpanel">
+                                        <div class="border rounded-3 p-4 bg-white mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h6 class="fw-bold mb-0 text-dark">
+                                                    <i class="bi bi-credit-card-2-front text-primary me-2"></i>Enter Card Details
+                                                </h6>
+                                                <div class="d-flex gap-2">
+                                                    <span class="badge bg-light text-primary border fw-bold">VISA</span>
+                                                    <span class="badge bg-light text-danger border fw-bold">MasterCard</span>
+                                                    <span class="badge bg-light text-success border fw-bold">RuPay</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted">Cardholder Name:</label>
+                                                <input type="text" class="form-control" th:field="*{cardHolderName}" 
+                                                       placeholder="Full name as printed on card" value="Rahul Sharma">
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted">Card Number:</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-light"><i class="bi bi-credit-card"></i></span>
+                                                    <input type="text" class="form-control font-monospace" th:field="*{cardNumber}" 
+                                                           id="cardNumberInput" placeholder="4111 2222 3333 4444" maxlength="19" value="4532 8921 7734 6512">
+                                                    <span class="input-group-text bg-light text-success"><i class="bi bi-shield-check"></i></span>
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-sm-6">
+                                                    <label class="form-label small fw-bold text-muted">Expiry Date:</label>
+                                                    <input type="text" class="form-control font-monospace" th:field="*{cardExpiry}" 
+                                                           placeholder="MM / YY" maxlength="5" value="12/28">
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <label class="form-label small fw-bold text-muted">CVV / CVC:</label>
+                                                    <div class="input-group">
+                                                        <input type="password" class="form-control font-monospace" th:field="*{cardCvv}" 
+                                                               placeholder="3 digits" maxlength="4" value="882">
+                                                        <span class="input-group-text bg-light" title="3-digit security code on back of card">
+                                                            <i class="bi bi-info-circle"></i>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-check small text-muted">
+                                                <input class="form-check-input" type="checkbox" id="saveCardCheck" checked>
+                                                <label class="form-check-label" for="saveCardCheck">
+                                                    Save this card securely as per RBI tokenization guidelines for future charging
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB 3: NET BANKING -->
+                                    <div class="tab-pane fade" id="content-netbanking" role="tabpanel">
+                                        <div class="border rounded-3 p-4 bg-white mb-3">
+                                            <h6 class="fw-bold mb-3 text-dark">
+                                                <i class="bi bi-bank text-warning me-2"></i>Select Your Bank
+                                            </h6>
+
+                                            <!-- Popular Banks Radio Grid -->
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-sm-6 col-md-4">
+                                                    <div class="form-check p-3 border rounded h-100 bg-light-subtle bank-card">
+                                                        <input class="form-check-input" type="radio" name="bankSelect" id="bankSbi" value="State Bank of India" checked onclick="selectBank(this.value)">
+                                                        <label class="form-check-label fw-semibold text-dark" for="bankSbi">
+                                                            <i class="bi bi-building me-1 text-primary"></i> SBI
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6 col-md-4">
+                                                    <div class="form-check p-3 border rounded h-100 bg-light-subtle bank-card">
+                                                        <input class="form-check-input" type="radio" name="bankSelect" id="bankHdfc" value="HDFC Bank" onclick="selectBank(this.value)">
+                                                        <label class="form-check-label fw-semibold text-dark" for="bankHdfc">
+                                                            <i class="bi bi-building me-1 text-danger"></i> HDFC Bank
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6 col-md-4">
+                                                    <div class="form-check p-3 border rounded h-100 bg-light-subtle bank-card">
+                                                        <input class="form-check-input" type="radio" name="bankSelect" id="bankIcici" value="ICICI Bank" onclick="selectBank(this.value)">
+                                                        <label class="form-check-label fw-semibold text-dark" for="bankIcici">
+                                                            <i class="bi bi-building me-1 text-warning"></i> ICICI Bank
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6 col-md-4">
+                                                    <div class="form-check p-3 border rounded h-100 bg-light-subtle bank-card">
+                                                        <input class="form-check-input" type="radio" name="bankSelect" id="bankAxis" value="Axis Bank" onclick="selectBank(this.value)">
+                                                        <label class="form-check-label fw-semibold text-dark" for="bankAxis">
+                                                            <i class="bi bi-building me-1 text-danger"></i> Axis Bank
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6 col-md-4">
+                                                    <div class="form-check p-3 border rounded h-100 bg-light-subtle bank-card">
+                                                        <input class="form-check-input" type="radio" name="bankSelect" id="bankKotak" value="Kotak Mahindra Bank" onclick="selectBank(this.value)">
+                                                        <label class="form-check-label fw-semibold text-dark" for="bankKotak">
+                                                            <i class="bi bi-building me-1 text-primary"></i> Kotak Bank
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6 col-md-4">
+                                                    <div class="form-check p-3 border rounded h-100 bg-light-subtle bank-card">
+                                                        <input class="form-check-input" type="radio" name="bankSelect" id="bankKerala" value="Kerala Bank" onclick="selectBank(this.value)">
+                                                        <label class="form-check-label fw-semibold text-dark" for="bankKerala">
+                                                            <i class="bi bi-building me-1 text-success"></i> Kerala Bank
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <label class="form-label small fw-bold text-muted">Or Select Another Bank:</label>
+                                                <select class="form-select" th:field="*{bankName}" id="allBanksSelect" onchange="selectBank(this.value)">
+                                                    <option value="State Bank of India">State Bank of India (SBI)</option>
+                                                    <option value="HDFC Bank">HDFC Bank</option>
+                                                    <option value="ICICI Bank">ICICI Bank</option>
+                                                    <option value="Axis Bank">Axis Bank</option>
+                                                    <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                                                    <option value="Canara Bank">Canara Bank</option>
+                                                    <option value="Punjab National Bank">Punjab National Bank</option>
+                                                    <option value="Bank of Baroda">Bank of Baroda</option>
+                                                    <option value="Federal Bank">Federal Bank</option>
+                                                    <option value="Kerala Bank">Kerala Bank</option>
+                                                    <option value="Union Bank of India">Union Bank of India</option>
+                                                    <option value="IndusInd Bank">IndusInd Bank</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- TAB 4: WALLET -->
+                                    <div class="tab-pane fade" id="content-wallet" role="tabpanel">
+                                        <div class="border rounded-3 p-4 bg-white mb-3">
+                                            <h6 class="fw-bold mb-3 text-dark">
+                                                <i class="bi bi-wallet2 text-info me-2"></i>EV Charge FastPay Wallet
+                                            </h6>
+                                            <div class="p-3 bg-light rounded-3 mb-3 d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span class="text-muted small d-block">Available Wallet Balance:</span>
+                                                    <h4 class="fw-bold text-success mb-0">₹1,500.00</h4>
+                                                </div>
+                                                <span class="badge bg-success px-3 py-2">Sufficient Balance</span>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="walletOption" id="walletDefault" value="EV_CHARGE_WALLET" checked>
+                                                <label class="form-check-label fw-semibold text-dark" for="walletDefault">
+                                                    Deduct directly from EV Charge Pre-funded Account
+                                                </label>
+                                                <p class="small text-muted mb-0 mt-1">Instant one-tap confirmation. Zero bank redirection or OTP required.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Discreet Viva / Demo Simulation Testing Panel -->
+                                <div class="accordion mb-4" id="vivaTesterAccordion">
+                                    <div class="accordion-item border-0 bg-light rounded-3">
+                                        <h2 class="accordion-header" id="headingTester">
+                                            <button class="accordion-button collapsed py-2 px-3 bg-light text-muted small fw-semibold" type="button" 
+                                                    data-bs-toggle="collapse" data-bs-target="#collapseTester" aria-expanded="false">
+                                                <i class="bi bi-gear-wide-connected me-2"></i>Academic Demonstration / Testing Controls (Optional)
+                                            </button>
+                                        </h2>
+                                        <div id="collapseTester" class="accordion-collapse collapse" data-bs-parent="#vivaTesterAccordion">
+                                            <div class="accordion-body p-3 bg-white border rounded-bottom-3 small">
+                                                <p class="text-muted mb-2">
+                                                    During project viva or evaluations, you can toggle between a successful transaction and a simulated bank decline to demonstrate error handling:
+                                                </p>
+                                                <div class="d-flex gap-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" th:field="*{demoOutcome}" id="outcomeSuccess" value="SUCCESS" checked>
+                                                        <label class="form-check-label fw-bold text-success" for="outcomeSuccess">
+                                                            <i class="bi bi-check-circle me-1"></i> Approve Payment (Success)
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" th:field="*{demoOutcome}" id="outcomeFailed" value="FAILED">
+                                                        <label class="form-check-label fw-bold text-danger" for="outcomeFailed">
+                                                            <i class="bi bi-x-circle me-1"></i> Simulate Bank Decline (Failure)
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Payment Button -->
+                                <button type="submit" id="paySubmitBtn" class="btn btn-electric w-100 py-3 fs-5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                    <i class="bi bi-lock-fill"></i>
+                                    <span>Pay ₹<span th:text="${booking.estimatedAmount}">500.00</span> via UPI</span>
+                                </button>
+
+                                <div class="text-center mt-3 small text-muted">
+                                    <i class="bi bi-shield-shaded text-success me-1"></i>
+                                    Guaranteed 100% Secure Transaction. Official receipt will be generated upon confirmation.
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Booking Order Summary -->
+                <div class="col-lg-4">
+                    <div class="card card-modern shadow-sm border-0 sticky-top" style="top: 2rem;">
+                        <div class="card-header bg-navy text-white py-3">
+                            <h5 class="fw-bold mb-0">
+                                <i class="bi bi-receipt-cutoff me-2 text-electric"></i>Order Summary
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <!-- Booking Reference -->
+                            <div class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom">
+                                <span class="text-muted small">Booking Reference:</span>
+                                <strong class="text-primary font-monospace" th:text="${booking.bookingReference}">EVC-123456</strong>
+                            </div>
+
+                            <!-- Station Info -->
+                            <div class="mb-3">
+                                <span class="text-muted small d-block">Charging Station:</span>
+                                <strong class="text-dark fs-6" th:text="${booking.stationName}">EV Charge Caltex Hub</strong>
+                                <small class="text-muted d-block" th:if="${booking.stationAddress}" th:text="${booking.stationAddress}">Kannur, Kerala</small>
+                            </div>
+
+                            <!-- Charger Info -->
+                            <div class="mb-3" th:if="${booking.chargerIdentifier}">
+                                <span class="text-muted small d-block">Charger Gun / Bay:</span>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-ev-station me-1"></i><span th:text="${booking.chargerIdentifier}">KNR-CLX-DC01</span>
+                                </span>
+                            </div>
+
+                            <!-- Schedule Time -->
+                            <div class="mb-3">
+                                <span class="text-muted small d-block">Reserved Slot:</span>
+                                <span class="text-dark fw-semibold" th:text="${booking.bookingDate + ', ' + booking.startTime + ' - ' + booking.endTime}">
+                                    2026-10-14, 14:00 - 15:00
+                                </span>
+                                <small class="text-muted d-block">Duration: <span th:text="${booking.durationHours}">1.0</span> Hour(s)</small>
+                            </div>
+
+                            <!-- Energy estimate -->
+                            <div class="mb-3" th:if="${booking.estimatedEnergyKwh != null}">
+                                <span class="text-muted small d-block">Estimated Energy:</span>
+                                <span class="text-dark fw-semibold" th:text="${booking.estimatedEnergyKwh} + ' kWh'">25.00 kWh</span>
+                            </div>
+
+                            <hr class="my-3">
+
+                            <!-- Pricing Details -->
+                            <div class="d-flex justify-content-between text-muted small mb-2">
+                                <span>Slot Base Tariff:</span>
+                                <span>₹<span th:text="${booking.estimatedAmount}">500.00</span></span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small mb-2">
+                                <span>Platform &amp; Connectivity:</span>
+                                <span class="text-success fw-bold">FREE (₹0.00)</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small mb-3">
+                                <span>GST (Inclusive):</span>
+                                <span>18% Incl.</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                <span class="fs-6 fw-bold text-dark">Total Amount Due:</span>
+                                <h3 class="fw-bold text-success mb-0">₹<span th:text="${booking.estimatedAmount}">500.00</span></h3>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-top text-center">
+                                <a th:href="@{/user/my-bookings}" class="btn btn-outline-secondary btn-sm w-100">
+                                    <i class="bi bi-x-circle me-1"></i> Cancel &amp; Pay Later
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+    <!-- Interactive Client Script for Payment Method Transitions -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const totalAmount = /*[[${booking.estimatedAmount}]]*/ '500.00';
+
+        function setPaymentMethod(method) {
+            document.getElementById('selectedPaymentMethod').value = method;
+            const payBtn = document.getElementById('paySubmitBtn');
+            if (method === 'UPI') {
+                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay ₹' + totalAmount + ' via UPI';
+            } else if (method === 'CARD') {
+                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay ₹' + totalAmount + ' via Debit/Credit Card';
+            } else if (method === 'NETBANKING') {
+                const bank = document.getElementById('allBanksSelect').value;
+                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay ₹' + totalAmount + ' via Net Banking (' + bank + ')';
+            } else if (method === 'WALLET') {
+                payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay ₹' + totalAmount + ' via FastPay Wallet';
+            }
+        }
+
+        function quickFillUpi(vpa) {
+            document.getElementById('upiIdInput').value = vpa;
+            verifyUpiId();
+        }
+
+        function verifyUpiId() {
+            const vpa = document.getElementById('upiIdInput').value.trim();
+            const msg = document.getElementById('upiVerifyMsg');
+            if (vpa && vpa.includes('@')) {
+                msg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Verified: ' + vpa + ' (Active Account)';
+                msg.className = 'text-success mt-1 d-block';
+            } else {
+                msg.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i> Please enter a valid UPI ID (e.g. name@bank)';
+                msg.className = 'text-danger mt-1 d-block';
+            }
+        }
+
+        function selectBank(bankName) {
+            document.getElementById('allBanksSelect').value = bankName;
+            const payBtn = document.getElementById('paySubmitBtn');
+            payBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay ₹' + totalAmount + ' via Net Banking (' + bankName + ')';
+        }
+
+        // Auto format card number input
+        const cardInput = document.getElementById('cardNumberInput');
+        if (cardInput) {
+            cardInput.addEventListener('input', function(e) {
+                let val = e.target.value.replace(/\D/g, '').substring(0, 16);
+                let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+                e.target.value = formatted;
+            });
+        }
+        /*]]>*/
+    </script>
+</body>
+</html>

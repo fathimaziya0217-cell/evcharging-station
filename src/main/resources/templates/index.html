@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Home')}"></head>
+<body>
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-7">
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-semibold mb-3">
+                            <i class="bi bi-lightning-charge-fill me-1"></i> Next-Gen Smart EV Charging Network
+                        </span>
+                        <h1 class="hero-title mb-3">
+                            Find. Book. Charge. Drive.<br>
+                            <span class="brand-green">Find Your Nearest EV Charging Station</span>
+                        </h1>
+                        <p class="hero-subtitle mb-4">
+                            Seamlessly discover verified charging stations, reserve guaranteed time slots, and charge your electric vehicle with real-time slot availability and instant payments.
+                        </p>
+                        
+                        <!-- Quick Location Search Form -->
+                        <div class="card card-modern p-3 shadow-lg" style="background: rgba(255, 255, 255, 0.95);">
+                            <form id="stationSearchForm" th:action="@{/stations}" method="get" class="row g-2 align-items-center">
+                                <input type="hidden" id="userLat" name="userLat" />
+                                <input type="hidden" id="userLng" name="userLng" />
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label small text-muted mb-1 fw-bold">Select City</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt"></i></span>
+                                        <select class="form-select border-start-0" name="city">
+                                            <option value="">All Cities</option>
+                                            <option th:each="city : ${cities}" th:value="${city}" th:text="${city}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small text-muted mb-1 fw-bold">Locality / Area</label>
+                                    <input type="text" class="form-control" name="area" placeholder="e.g. Caltex, Cyberpark">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small text-muted mb-1 fw-bold">Charger Type</label>
+                                    <select class="form-select" name="chargerType">
+                                        <option value="">Any Charger</option>
+                                        <option value="DC Fast Charging">DC Fast Charging</option>
+                                        <option value="AC Fast Charging">AC Fast Charging</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex flex-column justify-content-end">
+                                    <label class="form-label small text-muted mb-1 d-none d-md-block">&nbsp;</label>
+                                    <button type="submit" class="btn btn-electric w-100">
+                                        <i class="bi bi-search"></i> Search
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top small text-muted">
+                                <span><i class="bi bi-check2-circle text-success me-1"></i> Over <span th:text="${totalStationsCount}">16</span> Stations Configured</span>
+                                <button type="button" id="btnLocateMe" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-crosshair me-1"></i> Use My Current Location
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-5 text-center d-none d-lg-block">
+                        <div class="p-4 rounded-4" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                            <i class="bi bi-ev-station brand-green" style="font-size: 8rem;"></i>
+                            <div class="mt-3 text-start">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-white-50">High-Speed Chargers</span>
+                                    <span class="badge bg-success">Up to 150 kW</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-white-50">Supported Connectors</span>
+                                    <span class="text-light fw-semibold">CCS2, Type 2, CHAdeMO</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-white-50">Booking Integrity</span>
+                                    <span class="badge bg-primary">Zero Overlap Guarantee</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Popular Charging Stations Section -->
+        <section class="py-5">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-end mb-4">
+                    <div>
+                        <h6 class="text-uppercase text-success fw-bold tracking-wide mb-1">Featured Locations</h6>
+                        <h2 class="fw-bold mb-0">Popular EV Charging Stations</h2>
+                    </div>
+                    <a th:href="@{/stations}" class="btn btn-outline-dark btn-sm">
+                        View All Stations <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+
+                <!-- Empty state if no stations -->
+                <div th:if="${#lists.isEmpty(popularStations)}" class="alert alert-info py-4 text-center">
+                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                    No charging stations currently loaded in the database. As administrator, you can add stations via the Admin Dashboard.
+                </div>
+
+                <!-- Stations Grid -->
+                <div th:unless="${#lists.isEmpty(popularStations)}" class="row g-4">
+                    <div th:each="st : ${popularStations}" class="col-lg-4 col-md-6">
+                        <div class="card card-modern card-interactive station-card p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span th:if="${st.demo}" class="station-badge-demo">DEMO DATA</span>
+                                <span th:unless="${st.demo}" class="station-badge-active">VERIFIED</span>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-clock me-1"></i>
+                                    <span th:text="${st.operatingDays}">All Days</span>
+                                </span>
+                            </div>
+                            
+                            <h5 class="fw-bold text-dark mb-1" th:text="${st.name}">Station Name</h5>
+                            <p class="small text-muted mb-3" th:text="${st.address + ', ' + st.city}">Address</p>
+                            
+                            <div class="mb-3 d-flex flex-wrap gap-1">
+                                <span th:each="c : ${st.chargers}" class="badge bg-light text-primary border" style="font-size: 0.72rem;">
+                                    <i class="bi bi-lightning-charge text-warning"></i>
+                                    <span th:text="${c.powerKw + 'kW ' + c.connectorType}">60kW CCS2</span>
+                                </span>
+                            </div>
+                            
+                            <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-muted small d-block">Starting from</span>
+                                    <strong class="text-success fs-5">
+                                        ₹<span th:text="${!#lists.isEmpty(st.chargers) ? st.chargers[0].pricePerKwh : '16.00'}">16.00</span>
+                                    </strong>
+                                    <span class="small text-muted">/kWh</span>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a th:href="@{'/stations/' + ${st.id}}" class="btn btn-sm btn-outline-secondary">Details</a>
+                                    <a th:href="@{'/booking/new?stationId=' + ${st.id}}" class="btn btn-sm btn-electric">Book Slot</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="py-5 bg-white border-top border-bottom">
+            <div class="container">
+                <div class="text-center max-w-700 mx-auto mb-5">
+                    <h6 class="text-uppercase text-success fw-bold mb-1">Simple Workflow</h6>
+                    <h2 class="fw-bold">How EV Charging Booking Works</h2>
+                    <p class="text-muted">Reserve guaranteed charging slots in just 4 simple steps without waiting in long queues.</p>
+                </div>
+                
+                <div class="row g-4 text-center">
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <div class="stat-icon green mx-auto mb-3 shadow-sm" style="width: 64px; height: 64px;">
+                                <i class="bi bi-geo-alt-fill fs-3"></i>
+                            </div>
+                            <h5 class="fw-bold">1. Find Station</h5>
+                            <p class="small text-muted">Locate nearby charging stations in Kerala or other major cities using the interactive map or city filters.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <div class="stat-icon blue mx-auto mb-3 shadow-sm" style="width: 64px; height: 64px;">
+                                <i class="bi bi-plug-fill fs-3"></i>
+                            </div>
+                            <h5 class="fw-bold">2. Select Charger</h5>
+                            <p class="small text-muted">Pick a compatible charger (CCS2, Type 2, CHAdeMO) matching your EV's power and connector requirements.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <div class="stat-icon purple mx-auto mb-3 shadow-sm" style="width: 64px; height: 64px;">
+                                <i class="bi bi-calendar-check-fill fs-3"></i>
+                            </div>
+                            <h5 class="fw-bold">3. Choose Time Slot</h5>
+                            <p class="small text-muted">Select an available time slot. Our concurrency lock guarantees no double-booking for the selected gun.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <div class="stat-icon amber mx-auto mb-3 shadow-sm" style="width: 64px; height: 64px;">
+                                <i class="bi bi-credit-card-fill fs-3"></i>
+                            </div>
+                            <h5 class="fw-bold">4. Pay &amp; Charge</h5>
+                            <p class="small text-muted">Complete payment via Demo simulation or gateway, receive your instant reference, and drive in to charge.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features & Benefits -->
+        <section class="py-5">
+            <div class="container">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-6">
+                        <h6 class="text-uppercase text-success fw-bold mb-1">Advanced Technology</h6>
+                        <h2 class="fw-bold mb-3">Engineered for Reliable EV Mobility</h2>
+                        <p class="text-muted mb-4">
+                            Designed specifically to resolve range anxiety and charging uncertainty. Everything from slot locking to payment confirmation is validated with atomic database transactions.
+                        </p>
+                        
+                        <div class="d-flex gap-3 mb-3">
+                            <div class="stat-icon green flex-shrink-0" style="width: 44px; height: 44px;">
+                                <i class="bi bi-shield-check fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Atomic Concurrency Protection</h6>
+                                <p class="small text-muted mb-0">Two drivers cannot reserve the same charger simultaneously. Serialized database checks prevent conflicting bookings.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3 mb-3">
+                            <div class="stat-icon blue flex-shrink-0" style="width: 44px; height: 44px;">
+                                <i class="bi bi-map-fill fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">OpenStreetMap &amp; Leaflet Integration</h6>
+                                <p class="small text-muted mb-0">Interactive pinpoints with live direction routing to Google Maps without paid map API dependencies.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <div class="stat-icon purple flex-shrink-0" style="width: 44px; height: 44px;">
+                                <i class="bi bi-wallet2 fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Adapter-Based Payment Engine</h6>
+                                <p class="small text-muted mb-0">Seamlessly switches between safe Demo simulation for college testing and production-grade Razorpay payment gateways.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="card card-modern p-4 shadow-sm border">
+                            <h5 class="fw-bold mb-3 text-navy"><i class="bi bi-question-circle text-primary me-2"></i>Frequently Asked Questions</h5>
+                            
+                            <div class="accordion" id="faqAccordion">
+                                <div class="accordion-item border-0 mb-2">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                            How does the Demo Payment Mode work?
+                                        </button>
+                                    </h2>
+                                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body small text-muted">
+                                            In Demo mode, no real money is transferred. Users and examiners can simulate Successful, Failed, or Cancelled transactions to test backend database state updates and receipt generation.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="accordion-item border-0 mb-2">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                            What happens if I cancel a booking?
+                                        </button>
+                                    </h2>
+                                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body small text-muted">
+                                            Eligible bookings cancelled before the charging slot start time are marked as CANCELLED, the time slot is freed for other drivers, and a refund record is generated.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="accordion-item border-0">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                            Are the charging stations real?
+                                        </button>
+                                    </h2>
+                                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body small text-muted">
+                                            The sample stations in Kannur, Taliparamba, Thalassery, Kozhikode, and Kochi are demonstration test records. Administrators can add verified operational stations with real coordinates at any time.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

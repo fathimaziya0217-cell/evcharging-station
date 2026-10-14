@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Payment Failed')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-6">
+                    <div class="card card-modern shadow-lg p-4 p-md-5 border-0 text-center">
+                        <div class="stat-icon bg-danger bg-opacity-10 text-danger mx-auto mb-3" style="width: 68px; height: 68px;">
+                            <i class="bi bi-x-circle-fill fs-1"></i>
+                        </div>
+
+                        <h3 class="fw-bold text-danger mb-2">Payment Transaction Failed</h3>
+                        <p class="text-muted small mb-4">
+                            Your payment could not be processed successfully. Your booking reservation remains held temporarily.
+                        </p>
+
+                        <div class="alert alert-danger text-start small mb-4">
+                            <strong>Reason:</strong>
+                            <span th:text="${payment.failureReason != null ? payment.failureReason : 'Transaction declined by bank/provider.'}">Reason</span>
+                        </div>
+
+                        <div class="p-3 bg-light rounded-3 text-start small mb-4">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Payment Reference:</span>
+                                <span class="fw-bold font-monospace" th:text="${payment.paymentReference}">PAY-123</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1" th:if="${booking != null}">
+                                <span class="text-muted">Booking Reference:</span>
+                                <span class="fw-bold text-primary font-monospace" th:text="${booking.bookingReference}">EVC-123</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Amount Due:</span>
+                                <span class="fw-bold text-dark">₹<span th:text="${payment.amount}">0.00</span></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a th:if="${booking != null}" th:href="@{'/payment/' + ${booking.id}}" class="btn btn-electric px-4">
+                                <i class="bi bi-arrow-repeat me-1"></i> Retry Payment
+                            </a>
+                            <a th:href="@{/user/my-bookings}" class="btn btn-outline-secondary px-3">
+                                My Bookings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

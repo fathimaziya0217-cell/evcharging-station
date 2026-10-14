@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('System Reports & CSV Exports')}"></head>
+<body class="bg-light">
+    <nav th:replace="~{fragments/layout :: navbar}"></nav>
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <main class="py-4">
+        <div class="container-fluid px-lg-5">
+            <div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-file-earmark-bar-graph text-primary me-2"></i>System Analytics &amp; Reports</h3>
+                    <p class="text-muted small mb-0">Exportable operational summaries and financial performance metrics derived directly from MySQL.</p>
+                </div>
+            </div>
+
+            <!-- Report Category Nav Tabs -->
+            <ul class="nav nav-tabs mb-4" id="reportTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active fw-semibold" id="stations-tab" data-bs-toggle="tab" data-bs-target="#stations-report" type="button" role="tab">
+                        <i class="bi bi-ev-station me-1"></i> Station Utilization
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-semibold" id="revenue-tab" data-bs-toggle="tab" data-bs-target="#revenue-report" type="button" role="tab">
+                        <i class="bi bi-currency-rupee me-1"></i> Monthly Revenue
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-semibold" id="cancel-tab" data-bs-toggle="tab" data-bs-target="#cancel-report" type="button" role="tab">
+                        <i class="bi bi-x-circle me-1"></i> Cancellations Audit
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-semibold" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-report" type="button" role="tab">
+                        <i class="bi bi-people me-1"></i> Customer Fleet &amp; Registrations
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="reportTabsContent">
+                <!-- 1. Station Utilization Report -->
+                <div class="tab-pane fade show active" id="stations-report" role="tabpanel">
+                    <div class="card card-modern p-4 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-dark mb-0">Station Utilization Summary</h5>
+                            <a th:href="@{/admin/reports/export/stations}" class="btn btn-electric btn-sm">
+                                <i class="bi bi-download me-1"></i> Export Stations CSV
+                            </a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Station Name</th>
+                                        <th>City</th>
+                                        <th>Status</th>
+                                        <th>Total Chargers</th>
+                                        <th>Total Bookings</th>
+                                        <th>Completed Sessions</th>
+                                        <th>Generated Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="r : ${utilizationReport}">
+                                        <td th:text="${r.id}">1</td>
+                                        <td class="fw-bold" th:text="${r.name}">Station</td>
+                                        <td th:text="${r.city}">City</td>
+                                        <td><span class="badge bg-success" th:text="${r.status}">ACTIVE</span></td>
+                                        <td th:text="${r.total_chargers}">2</td>
+                                        <td class="fw-bold" th:text="${r.total_bookings}">10</td>
+                                        <td th:text="${r.completed_sessions}">8</td>
+                                        <td class="fw-bold text-success">₹<span th:text="${r.total_revenue}">0.00</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Monthly Revenue Report -->
+                <div class="tab-pane fade" id="revenue-report" role="tabpanel">
+                    <div class="card card-modern p-4 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-dark mb-0">Monthly Financial Revenue Report</h5>
+                            <a th:href="@{/admin/reports/export/revenue}" class="btn btn-electric btn-sm">
+                                <i class="bi bi-download me-1"></i> Export Revenue CSV
+                            </a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Month / Year</th>
+                                        <th>Transactions Count</th>
+                                        <th>Verified Successful Revenue</th>
+                                        <th>Failed Payment Count</th>
+                                        <th>Refunded Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="rev : ${revenueReport}">
+                                        <td class="fw-bold" th:text="${rev.month_year}">2026-10</td>
+                                        <td th:text="${rev.transaction_count}">5</td>
+                                        <td class="fw-bold text-success">₹<span th:text="${rev.successful_revenue}">0.00</span></td>
+                                        <td class="text-danger" th:text="${rev.failed_attempts}">0</td>
+                                        <td class="text-info" th:text="'₹' + ${rev.refunded_amount}">₹0.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Cancellations Report -->
+                <div class="tab-pane fade" id="cancel-report" role="tabpanel">
+                    <div class="card card-modern p-4 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-dark mb-0">Booking Cancellations Audit</h5>
+                            <a th:href="@{/admin/reports/export/cancellations}" class="btn btn-electric btn-sm">
+                                <i class="bi bi-download me-1"></i> Export Cancellations CSV
+                            </a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Ref</th>
+                                        <th>Customer</th>
+                                        <th>Station</th>
+                                        <th>Booking Date</th>
+                                        <th>Amount</th>
+                                        <th>Cancellation Reason</th>
+                                        <th>Cancelled At</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="c : ${cancellationReport}">
+                                        <td class="font-monospace fw-bold" th:text="${c.booking_reference}">EVC-01</td>
+                                        <td th:text="${c.user_name}">Customer</td>
+                                        <td th:text="${c.station_name}">Station</td>
+                                        <td th:text="${c.booking_date}">Date</td>
+                                        <td class="fw-bold text-secondary">₹<span th:text="${c.estimated_amount}">0.00</span></td>
+                                        <td class="text-danger" th:text="${c.cancellation_reason}">Reason</td>
+                                        <td class="text-muted" th:text="${c.cancelled_at}">Time</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. User Registrations Report -->
+                <div class="tab-pane fade" id="users-report" role="tabpanel">
+                    <div class="card card-modern p-4 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-dark mb-0">Customer Registrations &amp; Lifetime Activity</h5>
+                            <a th:href="@{/admin/reports/export/users}" class="btn btn-electric btn-sm">
+                                <i class="bi bi-download me-1"></i> Export Customers CSV
+                            </a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Full Name</th>
+                                        <th>Email</th>
+                                        <th>Mobile</th>
+                                        <th>Status</th>
+                                        <th>Registered At</th>
+                                        <th>Total Bookings</th>
+                                        <th>Total Spent</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="u : ${userReport}">
+                                        <td th:text="${u.id}">1</td>
+                                        <td class="fw-bold" th:text="${u.full_name}">Name</td>
+                                        <td th:text="${u.email}">email</td>
+                                        <td th:text="${u.phone}">phone</td>
+                                        <td>
+                                            <span th:if="${u.is_active}" class="badge bg-success">Active</span>
+                                            <span th:unless="${u.is_active}" class="badge bg-danger">Suspended</span>
+                                        </td>
+                                        <td class="text-muted" th:text="${u.created_at}">Date</td>
+                                        <td class="fw-bold" th:text="${u.total_bookings}">0</td>
+                                        <td class="fw-bold text-success">₹<span th:text="${u.total_spent}">0.00</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
